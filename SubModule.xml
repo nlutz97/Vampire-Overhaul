@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Module>
+  <Name value="VampireOverhaul"/>
+  <Id value="VampireOverhaul"/>
+  <Version value="v0.1.0"/>
+  <SingleplayerModule value="true"/>
+  <MultiplayerModule value="false"/>
+  <Official value="false"/>
+  
+  <DependedModules>
+    <DependedModule Id="Bannerlord.Harmony" />
+  </DependedModules>
+  
+  <SubModules>
+    <SubModule>
+      <Name value="VampireOverhaul"/>
+      <DLLName value="VampireOverhaul.dll"/>
+      <SubModuleClassType value="VampireOverhaul.SubModule"/>
+      <Tags>
+        <Tag key="DedicatedServerType" value="None" />
+        <Tag key="IsNoRenderModeElement" value="false" />
+        <Tag key="DependedModule" value="Bannerlord.Harmony" />
+      </Tags>
+    </SubModule>
+  </SubModules>
+  
+  <IncludedGameTypes>
+    <GameType value="Campaign"/>
+    <GameType value="CampaignStoryMode"/>
+    <GameType value="CustomGame"/>
+    <GameType value="EditorGame"/>
+  </IncludedGameTypes>
+</Module>

@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+*.dll
+*.pdb
+*.exe
+
+# Visual Studio / IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# MSBuild / dotnet
+*.log
+Directory.Build.props
+Directory.Build.targets
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Bannerlord specific
+*.bak
+*.save

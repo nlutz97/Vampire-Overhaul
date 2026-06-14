@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>VampireOverhaul</AssemblyName>
+    <RootNamespace>VampireOverhaul</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <OutputPath>bin\Win64_Shipping_Client\</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <BannerlordBinPath>C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client</BannerlordBinPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src\**\*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="TaleWorlds.Core">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Library">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.Library.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.MountAndBlade">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.MountAndBlade.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
