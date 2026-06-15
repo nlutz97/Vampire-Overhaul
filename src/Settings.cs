@@ -13,6 +13,14 @@ namespace VampireOverhaul
         [SettingPropertyGroup("General")]
         public bool EnableVampireFeatures { get; set; } = true;
 
+        [SettingPropertyBool("Enable Vampire Mechanics", Order = 1, RequireRestart = false)]
+        [SettingPropertyGroup("General")]
+        public bool EnableVampireMechanics { get; set; } = false;
+
+        [SettingPropertyFloatingInteger("Max Blood Lust", 50f, 1000f, "0", Order = 0, RequireRestart = false)]
+        [SettingPropertyGroup("Blood Lust")]
+        public float MaxBloodLust { get; set; } = 100f;
+
         [SettingPropertyFloatingInteger("Blood Gain Multiplier", 0.5f, 3.0f, "0%", Order = 1, RequireRestart = false)]
         [SettingPropertyGroup("Blood Lust")]
         public float BloodGainMultiplier { get; set; } = 1.0f;

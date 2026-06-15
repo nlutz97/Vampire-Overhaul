@@ -1,3 +1,4 @@
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
@@ -17,13 +18,21 @@ namespace VampireOverhaul
             }
         }
 
+        // OnGameLoaded registration moved to OnGameStart — Campaign.Current is not ready here.
+        // public override void OnGameLoaded(Game game, object initializerObject)
+        // {
+        //     base.OnGameLoaded(game, initializerObject);
+        //     Campaign.Current?.CampaignBehaviorManager?.AddBehavior(new VampireComponent());
+        // }
+
         protected override void OnGameStart(Game game, IGameStarter gameStarter)
         {
             base.OnGameStart(game, gameStarter);
 
-            InformationManager.DisplayMessage(new InformationMessage(
-                "VampireOverhaul v0.2.0 loaded successfully!", 
-                Colors.Green));
+            if (gameStarter is CampaignGameStarter campaignStarter)
+            {
+                campaignStarter.AddBehavior(new VampireComponent());
+            }
         }
     }
 }
