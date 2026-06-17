@@ -44,5 +44,9 @@
       <HintPath>$(BannerlordBinPath)\TaleWorlds.ObjectSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="TaleWorlds.DotNet">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.DotNet.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 </Project>

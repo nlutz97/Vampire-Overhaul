@@ -29,6 +29,14 @@ namespace VampireOverhaul
         [SettingPropertyGroup("Blood Lust")]
         public float BloodDecayRate { get; set; } = 0.5f;
 
+        [SettingPropertyFloatingInteger("Blood Reduction on Kill", 0f, 100f, "0", Order = 3, RequireRestart = false)]
+        [SettingPropertyGroup("Blood Lust")]
+        public float BloodReductionOnKill { get; set; } = 15f;
+
+        [SettingPropertyFloatingInteger("Blood Lust Warning Threshold", 0.5f, 0.95f, "0%", Order = 4, RequireRestart = false)]
+        [SettingPropertyGroup("Blood Lust")]
+        public float BloodLustWarningThreshold { get; set; } = 0.7f;
+
         [SettingPropertyFloatingInteger("Feral Damage Multiplier", 1.0f, 4.0f, "0%", Order = 3, RequireRestart = false)]
         [SettingPropertyGroup("Feral State")]
         public float FeralDamageMultiplier { get; set; } = 1.5f;
