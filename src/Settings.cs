@@ -8,6 +8,13 @@ namespace VampireOverhaul
     {
         public override string Id => "VampireOverhaul";
         public override string DisplayName => "Vampire Overhaul";
+        public override string FormatType => "json";
+        public override string FolderName => "VampireOverhaul";
+
+        public void RegisterSettings()
+        {
+            _ = Instance;
+        }
 
         [SettingPropertyBool("Enable Vampire Features", Order = 0, RequireRestart = false)]
         [SettingPropertyGroup("General")]

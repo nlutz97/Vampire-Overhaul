@@ -1,3 +1,4 @@
+using System;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -7,23 +8,27 @@ namespace VampireOverhaul
 {
     public class SubModule : MBSubModuleBase
     {
+        private const string ModVersion = "v0.3.3";
+
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
 
-            // Register MCM Settings
-            if (Settings.Instance != null)
+            // Register MCM settings so they persist after closing the game
+            try
             {
-                // MCM is initialized
+                Settings settings = Settings.Instance;
+                if (settings != null)
+                {
+                    settings.RegisterSettings();
+                }
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "VampireOverhaul: Failed to register MCM settings. " + ex.Message, Colors.Red));
             }
         }
-
-        // OnGameLoaded registration moved to OnGameStart — Campaign.Current is not ready here.
-        // public override void OnGameLoaded(Game game, object initializerObject)
-        // {
-        //     base.OnGameLoaded(game, initializerObject);
-        //     Campaign.Current?.CampaignBehaviorManager?.AddBehavior(new VampireComponent());
-        // }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarter)
         {
@@ -33,6 +38,15 @@ namespace VampireOverhaul
             {
                 campaignStarter.AddBehavior(new VampireComponent());
             }
+        }
+
+        public override void OnGameLoaded(Game game, object initializerObject)
+        {
+            base.OnGameLoaded(game, initializerObject);
+
+            // Show version only once when loading/continuing
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"VampireOverhaul {ModVersion} loaded successfully.", Colors.Green));
         }
     }
 }

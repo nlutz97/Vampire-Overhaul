@@ -50,20 +50,18 @@ namespace VampireOverhaul
 
             if (!IsVampire) return;
 
-            // Passive daily gain — scales with multiplier and current blood lust pressure
-            float pressureFactor = 1f + (CurrentBloodLust / MathF.Max(settings.MaxBloodLust, 1f)) * 0.25f;
-            float dailyGain = 3.1f * settings.BloodGainMultiplier * pressureFactor;
+            // Passive daily gain
+            float dailyGain = 4f * settings.BloodGainMultiplier;
             CurrentBloodLust = MathF.Min(CurrentBloodLust + dailyGain, settings.MaxBloodLust);
 
-            // Reset warning flag for the new day
             _warningShownToday = false;
 
-            // Show daily Blood Lust report
+            // Daily report
             InformationManager.DisplayMessage(new InformationMessage(
                 $"[Dusk] Blood Lust: {CurrentBloodLust:F0} / {settings.MaxBloodLust:F0}",
                 Colors.Cyan));
 
-            // Warning if Blood Lust is getting high
+            // High Blood Lust warning
             float warningThreshold = settings.MaxBloodLust * settings.BloodLustWarningThreshold;
             if (CurrentBloodLust >= warningThreshold && !_warningShownToday)
             {
@@ -83,15 +81,21 @@ namespace VampireOverhaul
             bannerlordMission.AddMissionBehavior(new VampireMissionBehavior(this));
         }
 
-        internal void OnPlayerMeleeKill()
+        private void OnAgentRemoved(Agent victim, Agent killer, AgentState agentState, KillingBlow blow)
         {
             var settings = Settings.Instance;
-            if (settings == null || !IsVampire)
-            {
-                return;
-            }
+            if (settings == null || !IsVampire) return;
 
-            CurrentBloodLust = MathF.Max(0f, CurrentBloodLust - settings.BloodReductionOnKill);
+            // Only reduce Blood Lust when the player kills a human in melee
+            if (killer != null && killer == Agent.Main && victim.IsHuman
+                && agentState == AgentState.Killed && !blow.IsMissile)
+            {
+                CurrentBloodLust = MathF.Max(0f, CurrentBloodLust - settings.BloodReductionOnKill);
+
+                // Optional feedback
+                InformationManager.DisplayMessage(new InformationMessage(
+                    $"Blood Lust reduced by feeding on the kill.", Colors.Green));
+            }
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -111,29 +115,13 @@ namespace VampireOverhaul
 
             public override MissionBehaviorType BehaviorType => MissionBehaviorType.Other;
 
-            public override void OnAgentHit(
-                Agent affectorAgent,
+            public override void OnAgentRemoved(
                 Agent affectedAgent,
-                in MissionWeapon weapon,
-                in Blow blow,
-                in AttackCollisionData attackCollisionData)
+                Agent affectorAgent,
+                AgentState agentState,
+                KillingBlow blow)
             {
-                var settings = Settings.Instance;
-                if (settings == null || !_component.IsVampire)
-                {
-                    return;
-                }
-
-                // Only reduce Blood Lust on melee kills by the player
-                if (affectorAgent != Agent.Main || !affectedAgent.IsHuman || blow.IsMissile)
-                {
-                    return;
-                }
-
-                if (blow.InflictedDamage >= affectedAgent.HealthLimit)
-                {
-                    _component.OnPlayerMeleeKill();
-                }
+                _component.OnAgentRemoved(affectedAgent, affectorAgent, agentState, blow);
             }
         }
     }
