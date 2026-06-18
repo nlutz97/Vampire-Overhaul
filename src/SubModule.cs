@@ -1,4 +1,5 @@
 using System;
+using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -8,11 +9,22 @@ namespace VampireOverhaul
 {
     public class SubModule : MBSubModuleBase
     {
-        private const string ModVersion = "v0.3.3";
+        private const string ModVersion = "v0.3.5";
+        private static readonly Harmony HarmonyInstance = new Harmony("com.vampireoverhaul");
 
         protected override void OnSubModuleLoad()
         {
             base.OnSubModuleLoad();
+
+            try
+            {
+                HarmonyInstance.PatchAll(typeof(SubModule).Assembly);
+            }
+            catch (Exception ex)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "VampireOverhaul: Harmony patching failed. " + ex.Message, Colors.Red));
+            }
 
             // Register MCM settings so they persist after closing the game
             try
@@ -37,6 +49,7 @@ namespace VampireOverhaul
             if (gameStarter is CampaignGameStarter campaignStarter)
             {
                 campaignStarter.AddBehavior(new VampireComponent());
+                campaignStarter.AddBehavior(new PrisonerFeedingBehavior());
             }
         }
 

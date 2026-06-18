@@ -30,8 +30,20 @@ namespace VampireOverhaul
 
         public override void RegisterEvents()
         {
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+            CampaignEvents.HourlyTickEvent.AddNonSerializedListener(this, OnHourlyTick);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.OnMissionStartedEvent.AddNonSerializedListener(this, OnMissionStarted);
+        }
+
+        private void OnSessionLaunched(CampaignGameStarter starter)
+        {
+            TryActivateVampireFromSettings(showMessage: false);
+        }
+
+        private void OnHourlyTick()
+        {
+            TryActivateVampireFromSettings(showMessage: false);
         }
 
         private void OnDailyTick()
@@ -39,13 +51,9 @@ namespace VampireOverhaul
             var settings = Settings.Instance;
             if (settings == null) return;
 
-            if (settings.EnableVampireMechanics && !IsVampire)
+            if (TryActivateVampireFromSettings(showMessage: true))
             {
-                IsVampire = true;
-                CurrentBloodLust = 0f;
-
-                InformationManager.DisplayMessage(new InformationMessage(
-                    "You are now a vampire.", Colors.Red));
+                // Vampire just became active; daily blood lust logic runs below.
             }
 
             if (!IsVampire) return;
@@ -96,6 +104,26 @@ namespace VampireOverhaul
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"Blood Lust reduced by feeding on the kill.", Colors.Green));
             }
+        }
+
+        private bool TryActivateVampireFromSettings(bool showMessage)
+        {
+            Settings? settings = Settings.Instance;
+            if (settings == null || !settings.EnableVampireMechanics || IsVampire)
+            {
+                return false;
+            }
+
+            IsVampire = true;
+            CurrentBloodLust = 0f;
+
+            if (showMessage)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "You are now a vampire.", Colors.Red));
+            }
+
+            return true;
         }
 
         public override void SyncData(IDataStore dataStore)

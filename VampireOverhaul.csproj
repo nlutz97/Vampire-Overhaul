@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="Bannerlord.MCM" Version="5.*" IncludeAssets="compile" />
+    <PackageReference Include="Lib.Harmony" Version="2.2.2" IncludeAssets="compile" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,6 +47,18 @@
     </Reference>
     <Reference Include="TaleWorlds.DotNet">
       <HintPath>$(BannerlordBinPath)\TaleWorlds.DotNet.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Localization">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.Localization.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.CampaignSystem.ViewModelCollection">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.CampaignSystem.ViewModelCollection.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="TaleWorlds.Core.ViewModelCollection">
+      <HintPath>$(BannerlordBinPath)\TaleWorlds.Core.ViewModelCollection.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>
