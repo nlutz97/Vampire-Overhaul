@@ -85,6 +85,7 @@ namespace VampireOverhaul
             {
                 roster.AddToCounts(prisoner, -1);
                 PartyScreenFeedSync.SyncInitialPrisonerCount(_partyScreenLogic, Side, prisoner, -1);
+                PrisonerFeedingActions.ApplyMoralePenalty();
 
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"You drain a {prisoner.Name} completely. Their body goes limp.", Colors.Red));

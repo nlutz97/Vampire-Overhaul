@@ -95,6 +95,7 @@ namespace VampireOverhaul
             if (kill)
             {
                 roster.RemoveTroop(prisoner, 1, default, 0);
+                ApplyMoralePenalty();
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"You drain a {prisoner.Name} completely. Their body goes limp.", Colors.Red));
             }
@@ -103,6 +104,52 @@ namespace VampireOverhaul
                 InformationManager.DisplayMessage(new InformationMessage(
                     $"You take just enough from a {prisoner.Name} to satisfy your hunger. They survive.", Colors.Green));
             }
+        }
+
+        public static void ApplyMoralePenalty()
+        {
+            MobileParty? party = MobileParty.MainParty;
+            if (party == null)
+            {
+                return;
+            }
+
+            int totalTroops = party.MemberRoster.TotalManCount;
+            if (totalTroops <= 1)
+            {
+                return;
+            }
+
+            int witnessCount = 0;
+
+            foreach (TroopRosterElement element in party.MemberRoster.GetTroopRoster())
+            {
+                if (element.Character == null || element.Number <= 0)
+                {
+                    continue;
+                }
+
+                if (element.Character.IsHero && element.Character.HeroObject == Hero.MainHero)
+                {
+                    continue;
+                }
+
+                witnessCount += element.Number;
+            }
+
+            if (witnessCount == 0)
+            {
+                return;
+            }
+
+            float witnessPercentage = (float)witnessCount / totalTroops;
+            float finalPenalty = 8f * witnessPercentage;
+
+            party.RecentEventsMorale -= finalPenalty;
+
+            InformationManager.DisplayMessage(new InformationMessage(
+                $"Your party is unsettled by what they witnessed. Morale decreased by {finalPenalty:F1}.",
+                Colors.Red));
         }
     }
 }

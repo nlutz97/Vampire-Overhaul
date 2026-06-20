@@ -9,7 +9,7 @@ namespace VampireOverhaul
 {
     public class SubModule : MBSubModuleBase
     {
-        private const string ModVersion = "v0.3.5";
+        private const string ModVersion = "v0.3.6";
         private static readonly Harmony HarmonyInstance = new Harmony("com.vampireoverhaul");
 
         protected override void OnSubModuleLoad()
