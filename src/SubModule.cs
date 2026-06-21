@@ -9,7 +9,7 @@ namespace VampireOverhaul
 {
     public class SubModule : MBSubModuleBase
     {
-        private const string ModVersion = "v0.3.6";
+        private const string ModVersion = "v0.3.8";
         private static readonly Harmony HarmonyInstance = new Harmony("com.vampireoverhaul");
 
         protected override void OnSubModuleLoad()
@@ -50,6 +50,7 @@ namespace VampireOverhaul
             {
                 campaignStarter.AddBehavior(new VampireComponent());
                 campaignStarter.AddBehavior(new PrisonerFeedingBehavior());
+                campaignStarter.AddBehavior(new RandomBloodLustEventsBehavior());
             }
         }
 
