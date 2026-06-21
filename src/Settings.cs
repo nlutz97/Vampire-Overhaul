@@ -17,15 +17,6 @@ namespace VampireOverhaul
         public void RegisterSettings()
         {
             _ = Instance;
-            InitializeDebugActions();
-        }
-
-        private void InitializeDebugActions()
-        {
-            DebugClearBloodLust = () => TrySetBloodLust(0f);
-            DebugHighBloodLust = () => TrySetBloodLust(MaxBloodLust * 0.7f);
-            DebugFeralBloodLust = () => TrySetBloodLust(MaxBloodLust * 0.95f);
-            DebugMaxBloodLust = () => TrySetBloodLust(MaxBloodLust);
         }
 
         [SettingPropertyBool("Enable Vampire Features", Order = 0, RequireRestart = false)]
@@ -64,67 +55,132 @@ namespace VampireOverhaul
         [SettingPropertyGroup("Feral State")]
         public float FeralSpeedMultiplier { get; set; } = 1.2f;
 
-        private float _debugBloodLustFallback;
+        private float _debugBloodLustPercentFallback;
 
         [SettingPropertyFloatingInteger(
             "Set Blood Lust",
             0f,
-            1000f,
-            "0",
+            100f,
+            "0'%'",
             Order = 0,
             RequireRestart = false,
-            HintText = "Sets your current Blood Lust immediately while in a campaign. Shows live value when a save is loaded.")]
+            HintText = "Sets Blood Lust as a percentage of your configured Max Blood Lust. Applies immediately in a campaign.")]
         [SettingPropertyGroup("Debug", GroupOrder = 99)]
-        public float DebugBloodLust
+        public float DebugBloodLustPercent
         {
             get
             {
+                float maxBloodLust = MaxBloodLust;
+                if (maxBloodLust <= 0f)
+                {
+                    return 0f;
+                }
+
                 VampireComponent? vampire = Campaign.Current?.GetCampaignBehavior<VampireComponent>();
-                return vampire?.CurrentBloodLust ?? _debugBloodLustFallback;
+                if (vampire == null)
+                {
+                    return _debugBloodLustPercentFallback;
+                }
+
+                return MathF.Clamp(vampire.CurrentBloodLust / maxBloodLust * 100f, 0f, 100f);
             }
             set
             {
-                _debugBloodLustFallback = value;
-                TrySetBloodLust(value);
-                OnPropertyChanged();
+                _debugBloodLustPercentFallback = MathF.Clamp(value, 0f, 100f);
+                TrySetBloodLust(MaxBloodLust * _debugBloodLustPercentFallback / 100f);
+                NotifyDebugBloodLustChanged();
             }
         }
 
         [SettingPropertyButton(
             "Clear Blood Lust",
-            Content = "Set to 0",
+            Content = "Set to 0%",
             Order = 1,
             RequireRestart = false,
             HintText = "Instantly sets Blood Lust to 0.")]
         [SettingPropertyGroup("Debug", GroupOrder = 99)]
-        public Action DebugClearBloodLust { get; set; } = () => { };
+        public Action DebugClearBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(0f);
+            set { }
+        }
+
+        [SettingPropertyButton(
+            "Moderate Blood Lust",
+            Content = "Set to 50%",
+            Order = 2,
+            RequireRestart = false,
+            HintText = "Sets Blood Lust to 50% of max.")]
+        [SettingPropertyGroup("Debug", GroupOrder = 99)]
+        public Action DebugHalfBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(50f);
+            set { }
+        }
 
         [SettingPropertyButton(
             "High Blood Lust",
+            Content = "Set to 75%",
+            Order = 3,
+            RequireRestart = false,
+            HintText = "Sets Blood Lust to 75% of max.")]
+        [SettingPropertyGroup("Debug", GroupOrder = 99)]
+        public Action DebugHighBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(75f);
+            set { }
+        }
+
+        [SettingPropertyButton(
+            "Event Threshold",
             Content = "Set to 70%",
-            Order = 2,
+            Order = 4,
             RequireRestart = false,
             HintText = "Sets Blood Lust to 70% of max (random event threshold).")]
         [SettingPropertyGroup("Debug", GroupOrder = 99)]
-        public Action DebugHighBloodLust { get; set; } = () => { };
+        public Action DebugEventBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(70f);
+            set { }
+        }
 
         [SettingPropertyButton(
             "Feral Blood Lust",
             Content = "Set to 95%",
-            Order = 3,
+            Order = 5,
             RequireRestart = false,
             HintText = "Sets Blood Lust to 95% of max (feral threshold).")]
         [SettingPropertyGroup("Debug", GroupOrder = 99)]
-        public Action DebugFeralBloodLust { get; set; } = () => { };
+        public Action DebugFeralBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(95f);
+            set { }
+        }
 
         [SettingPropertyButton(
             "Max Blood Lust",
-            Content = "Set to Max",
-            Order = 4,
+            Content = "Set to 100%",
+            Order = 6,
             RequireRestart = false,
             HintText = "Sets Blood Lust to your configured max.")]
         [SettingPropertyGroup("Debug", GroupOrder = 99)]
-        public Action DebugMaxBloodLust { get; set; } = () => { };
+        public Action DebugMaxBloodLust
+        {
+            get => () => ApplyDebugBloodLustPercent(100f);
+            set { }
+        }
+
+        private void ApplyDebugBloodLustPercent(float percent)
+        {
+            _debugBloodLustPercentFallback = MathF.Clamp(percent, 0f, 100f);
+            TrySetBloodLust(MaxBloodLust * _debugBloodLustPercentFallback / 100f);
+            NotifyDebugBloodLustChanged();
+        }
+
+        private void NotifyDebugBloodLustChanged()
+        {
+            OnPropertyChanged(nameof(DebugBloodLustPercent));
+        }
 
         public bool TrySetBloodLust(float value, bool showMessage = true)
         {
@@ -163,12 +219,15 @@ namespace VampireOverhaul
 
             float clamped = MathF.Clamp(value, 0f, MaxBloodLust);
             vampire.CurrentBloodLust = clamped;
-            _debugBloodLustFallback = clamped;
+            _debugBloodLustPercentFallback = MaxBloodLust > 0f
+                ? clamped / MaxBloodLust * 100f
+                : 0f;
 
             if (showMessage)
             {
                 InformationManager.DisplayMessage(new InformationMessage(
-                    $"[Debug] Blood Lust set to {clamped:F0} / {MaxBloodLust:F0}.", Colors.Yellow));
+                    $"[Debug] Blood Lust set to {clamped:F0} / {MaxBloodLust:F0} ({_debugBloodLustPercentFallback:F0}%).",
+                    Colors.Yellow));
             }
 
             return true;
