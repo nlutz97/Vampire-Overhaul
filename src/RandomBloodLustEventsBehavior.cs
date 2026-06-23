@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.GameState;
@@ -16,11 +17,17 @@ namespace VampireOverhaul
 {
     public class RandomBloodLustEventsBehavior : CampaignBehaviorBase, INonReadyObjectHandler
     {
+        private const string BloodLustIncidentId = "vo_bloodlust_event";
+
+        private const float FailedHuntBloodLustGain = 10f;
+
+        private static bool s_bloodLustOptionsRegistered;
+
         private static readonly string[] GroupTypes = { "peasants", "brigands", "merchants", "patrols", "homestead" };
 
         private Incident? _bloodLustIncident;
-        private bool _incidentsRegistered;
         private bool _forceNextIncident;
+        private bool _ignoreIncidentConditions;
         private string _activeGroup = "travelers";
 
         public override void RegisterEvents()
@@ -31,8 +38,8 @@ namespace VampireOverhaul
 
         public void OnBeforeNonReadyObjectsDeleted()
         {
-            _incidentsRegistered = false;
             _bloodLustIncident = null;
+            s_bloodLustOptionsRegistered = false;
             RegisterCustomIncidents();
         }
 
@@ -43,13 +50,22 @@ namespace VampireOverhaul
 
         private void RegisterCustomIncidents()
         {
-            if (_incidentsRegistered || Game.Current?.ObjectManager == null)
+            if (Game.Current?.ObjectManager == null)
             {
                 return;
             }
 
-            _bloodLustIncident = Game.Current.ObjectManager.RegisterPresumedObject(
-                new Incident("vo_bloodlust_event"));
+            _bloodLustIncident = Game.Current.ObjectManager.GetObject<Incident>(BloodLustIncidentId);
+            if (_bloodLustIncident == null)
+            {
+                _bloodLustIncident = Game.Current.ObjectManager.RegisterPresumedObject(
+                    new Incident(BloodLustIncidentId));
+            }
+
+            if (_bloodLustIncident == null || s_bloodLustOptionsRegistered)
+            {
+                return;
+            }
 
             _bloodLustIncident.Initialize(
                 "Blood Lust Rising",
@@ -65,18 +81,24 @@ namespace VampireOverhaul
                 {
                     IncidentEffect.Select(
                         IncidentEffect.Custom(
-                            ApplySuccessfulHunt,
-                            () => new List<TextObject>
+                            () => true,
+                            () =>
                             {
-                                new TextObject("You return from the hunt feeling satisfied. Your blood lust has been sated.")
+                                ApplySuccessfulHunt();
+                                return new List<TextObject>
+                                {
+                                    new TextObject("You return from the hunt feeling satisfied. Your blood lust has been sated.")
+                                };
                             },
                             _ => new List<TextObject> { new TextObject("May sate your blood lust") }),
-                        IncidentEffect.Group(
-                            IncidentEffect.MoraleChange(-8f),
-                            IncidentEffect.Custom(
-                                ApplyFailedHunt,
-                                GetFailedHuntMessages,
-                                _ => new List<TextObject> { new TextObject("Risky choice") })),
+                        IncidentEffect.Custom(
+                            () => true,
+                            () =>
+                            {
+                                ApplyFailedHunt();
+                                return GetFailedHuntMessages();
+                            },
+                            _ => new List<TextObject> { new TextObject("May fail and worsen your hunger") }),
                         0.65f)
                 },
                 null,
@@ -90,14 +112,14 @@ namespace VampireOverhaul
                         () => true,
                         () => new List<TextObject>
                         {
-                            new TextObject("You steel yourself and push the hunger down.")
+                            new TextObject("You steel yourself and push the hunger down. The hunger remains, but you endure.")
                         },
-                        _ => new List<TextObject> { new TextObject("Resist the hunger") })
+                        _ => new List<TextObject> { new TextObject("Resist the hunger; blood lust unchanged") })
                 },
                 null,
                 ClearForcedIncident);
 
-            _incidentsRegistered = true;
+            s_bloodLustOptionsRegistered = true;
         }
 
         private void OnDailyTick()
@@ -122,8 +144,18 @@ namespace VampireOverhaul
                 return;
             }
 
+            QueueRandomIncident();
+        }
+
+        public void QueueRandomIncident()
+        {
+            TryQueueIncident(ignoreConditions: false, out _);
+        }
+
+        public bool TryQueueIncident(bool ignoreConditions, out string failureReason)
+        {
             _activeGroup = GroupTypes[MBRandom.RandomInt(GroupTypes.Length)];
-            QueueBloodLustIncident();
+            return TryQueueBloodLustIncident(ignoreConditions, out failureReason);
         }
 
         private bool ShouldRollForBloodLustIncident()
@@ -150,13 +182,36 @@ namespace VampireOverhaul
 
         private bool CanShowBloodLustIncident(TextObject description)
         {
-            if (!_forceNextIncident || !IsVampireReadyForIncidents())
+            if (!_forceNextIncident)
+            {
+                return false;
+            }
+
+            if (_ignoreIncidentConditions)
+            {
+                if (!IsVampireReadyForForcedIncident())
+                {
+                    return false;
+                }
+            }
+            else if (!IsVampireReadyForIncidents())
             {
                 return false;
             }
 
             description.SetTextVariable("BLOODLUST_GROUP", _activeGroup);
             return true;
+        }
+
+        private bool IsVampireReadyForForcedIncident()
+        {
+            Settings? settings = Settings.Instance;
+            VampireComponent? vampire = Campaign.Current?.GetCampaignBehavior<VampireComponent>();
+
+            return settings != null
+                && settings.EnableVampireMechanics
+                && vampire != null
+                && vampire.IsVampire;
         }
 
         private bool IsVampireReadyForIncidents()
@@ -171,61 +226,114 @@ namespace VampireOverhaul
                 && vampire.CurrentBloodLust > 0f;
         }
 
-        private void QueueBloodLustIncident()
+        private bool TryQueueBloodLustIncident(bool ignoreConditions, out string failureReason)
         {
+            failureReason = string.Empty;
             RegisterCustomIncidents();
 
-            MapState? mapState = GameStateManager.Current?.LastOrDefault<MapState>();
-            if (mapState == null || _bloodLustIncident == null)
+            if (Campaign.Current == null)
             {
-                return;
+                failureReason = "no active campaign";
+                return false;
             }
 
+            if (Hero.MainHero.IsPrisoner)
+            {
+                failureReason = "your hero is a prisoner";
+                return false;
+            }
+
+            MapState? mapState = GameStateManager.Current?.ActiveState as MapState;
+            if (mapState == null || _bloodLustIncident == null)
+            {
+                failureReason = "you must be on the campaign map";
+                return false;
+            }
+
+            if (MobileParty.MainParty?.MapEvent != null)
+            {
+                failureReason = "you are currently in a battle";
+                return false;
+            }
+
+            ClearIncidentCooldown(_bloodLustIncident);
+            _ignoreIncidentConditions = ignoreConditions;
             _forceNextIncident = true;
             if (!_bloodLustIncident.CanIncidentBeInvoked())
             {
-                _forceNextIncident = false;
-                return;
+                ResetForcedIncidentState();
+                failureReason = ignoreConditions
+                    ? "incident conditions failed unexpectedly"
+                    : "blood lust must be above 0 and vampire mechanics must be enabled";
+                return false;
             }
 
-            mapState.NextIncident = _bloodLustIncident;
+            mapState.StartIncident(_bloodLustIncident);
+            mapState.NextIncident = null;
+            return true;
         }
 
-        private bool ApplySuccessfulHunt()
+        private void ApplySuccessfulHunt()
         {
             VampireComponent? vampire = Campaign.Current?.GetCampaignBehavior<VampireComponent>();
             if (vampire == null)
             {
-                return false;
+                return;
             }
 
             vampire.CurrentBloodLust = 0f;
-            return true;
         }
 
-        private bool ApplyFailedHunt()
+        private void ApplyFailedHunt()
         {
-            MobileParty? party = MobileParty.MainParty;
-            if (party != null)
+            VampireComponent? vampire = Campaign.Current?.GetCampaignBehavior<VampireComponent>();
+            Settings? settings = Settings.Instance;
+            if (vampire == null || settings == null)
             {
-                party.RecentEventsMorale -= 8f;
+                return;
             }
 
-            return true;
+            vampire.CurrentBloodLust = MathF.Min(
+                vampire.CurrentBloodLust + FailedHuntBloodLustGain,
+                settings.MaxBloodLust);
         }
 
         private List<TextObject> GetFailedHuntMessages()
         {
             string message = _activeGroup is "brigands" or "patrols"
-                ? "The encounter turns violent. You barely escape."
-                : "The hunt goes poorly. You return empty-handed.";
+                ? "The encounter turns violent. You barely escape, and the hunger only grows stronger."
+                : "The hunt goes poorly. You return empty-handed, blood lust rising.";
 
             return new List<TextObject> { new TextObject(message) };
         }
 
         private void ClearForcedIncident()
         {
+            ResetForcedIncidentState();
+        }
+
+        private void ResetForcedIncidentState()
+        {
             _forceNextIncident = false;
+            _ignoreIncidentConditions = false;
+        }
+
+        private static void ClearIncidentCooldown(Incident incident)
+        {
+            IncidentsCampaignBehaviour? behavior = Campaign.Current?.GetCampaignBehavior<IncidentsCampaignBehaviour>();
+            if (behavior == null)
+            {
+                return;
+            }
+
+            FieldInfo? cooldownField = typeof(IncidentsCampaignBehaviour).GetField(
+                "_incidentsOnCooldown",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+
+            if (cooldownField?.GetValue(behavior) is Dictionary<Incident, CampaignTime> cooldowns)
+            {
+                cooldowns.Remove(incident);
+            }
         }
 
         public override void SyncData(IDataStore dataStore) { }

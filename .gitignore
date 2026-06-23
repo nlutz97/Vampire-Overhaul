@@ -1,6 +1,7 @@
 # Build output
 bin/
 obj/
+VampireOverhaul.zip
 *.dll
 *.pdb
 *.exe

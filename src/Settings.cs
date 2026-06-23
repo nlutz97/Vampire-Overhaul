@@ -4,6 +4,7 @@ using MCM.Abstractions.Attributes.v2;
 using MCM.Abstractions.Base.Global;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
+using VampireOverhaul.Events.BloodLust;
 
 namespace VampireOverhaul
 {
@@ -168,6 +169,54 @@ namespace VampireOverhaul
         {
             get => () => ApplyDebugBloodLustPercent(100f);
             set { }
+        }
+
+        [SettingPropertyButton(
+            "Trigger Blood Lust Incident",
+            Content = "Trigger",
+            Order = 7,
+            RequireRestart = false,
+            HintText = "Opens the Blood Lust map incident scroll on the campaign map. Close this menu first if nothing appears.")]
+        [SettingPropertyGroup("Debug", GroupOrder = 99)]
+        public Action DebugTriggerRandomBloodLustEvent
+        {
+            get => TriggerRandomBloodLustEventFromDebug;
+            set { }
+        }
+
+        private void TriggerRandomBloodLustEventFromDebug()
+        {
+            if (Campaign.Current == null)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "[Debug] Load a campaign before triggering Blood Lust events.", Colors.Red));
+                return;
+            }
+
+            if (!EnableVampireMechanics)
+            {
+                InformationManager.DisplayMessage(new InformationMessage(
+                    "[Debug] Enable Vampire Mechanics in General settings first.", Colors.Red));
+                return;
+            }
+
+            VampireComponent? vampire = Campaign.Current.GetCampaignBehavior<VampireComponent>();
+            if (vampire == null)
+            {
+                return;
+            }
+
+            if (!vampire.IsVampire)
+            {
+                vampire.IsVampire = true;
+            }
+
+            if (vampire.CurrentBloodLust <= 0f)
+            {
+                TrySetBloodLust(MaxBloodLust * 0.5f, showMessage: false);
+            }
+
+            BloodLustEventManager.TriggerSpecificEvent("map_incident_bloodlust", vampire, ignoreConditions: true);
         }
 
         private void ApplyDebugBloodLustPercent(float percent)

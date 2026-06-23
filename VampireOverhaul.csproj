@@ -62,4 +62,8 @@
       <Private>false</Private>
     </Reference>
   </ItemGroup>
+
+  <Target Name="PublishGitHubRelease" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(PublishGitHubRelease)' != 'false'">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\publish-github-release.ps1&quot;" />
+  </Target>
 </Project>

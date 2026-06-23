@@ -4,12 +4,13 @@ using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
 using TaleWorlds.MountAndBlade;
+using VampireOverhaul.Events.BloodLust;
 
 namespace VampireOverhaul
 {
     public class SubModule : MBSubModuleBase
     {
-        private const string ModVersion = "v0.3.8";
+        private const string ModVersion = "v0.3.8.1";
         private static readonly Harmony HarmonyInstance = new Harmony("com.vampireoverhaul");
 
         protected override void OnSubModuleLoad()
@@ -48,6 +49,8 @@ namespace VampireOverhaul
 
             if (gameStarter is CampaignGameStarter campaignStarter)
             {
+                BloodLustEventManager.RegisterDefaultEvents();
+
                 campaignStarter.AddBehavior(new VampireComponent());
                 campaignStarter.AddBehavior(new PrisonerFeedingBehavior());
                 campaignStarter.AddBehavior(new RandomBloodLustEventsBehavior());
